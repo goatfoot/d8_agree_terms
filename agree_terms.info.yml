@@ -1,0 +1,9 @@
+name: 'Careerforce Agree to Terms'
+type: module
+package: Careerforce
+description: 'Provides a field or obtaining and auditing user consent'
+core: 8.x
+
+dependencies:
+  - careerforce
+

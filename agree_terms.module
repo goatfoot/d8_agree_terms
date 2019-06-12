@@ -1,0 +1,72 @@
+<?php
+
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Access\AccessResult;
+use Drupal\user\EntityOwnerInterface;
+use Drupal\user\UserInterface;
+
+/**
+ * Implements hook_entity_field_access().
+ *
+ */
+function agree_terms_entity_field_access($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
+
+  // Find out what field we're looking at.
+  if ($field_definition->getType() != 'agree_terms') {
+    return AccessResult::neutral();
+  }
+
+  // First we'll check if the user has the 'superuser'
+  // permissions that node provides. This way administrators
+  // will be able to administer the content types.
+  if ($account->hasPermission('bypass node access')) {
+    return AccessResult::allowed();
+  }
+  if ($account->hasPermission('administer content types', $account)) {
+    return AccessResult::allowed();
+  }
+  if ($account->hasPermission('administer the agree_terms field', $account)) {
+    return AccessResult::allowed();
+  }
+
+  // For anyone else, it depends on the desired operation.
+  if ($operation == 'view' && $account->hasPermission('view any agree_terms')) {
+    return AccessResult::allowed();
+  }
+
+
+  // At this point, we need to know if the user "owns" the entity we're attached
+  // to. If it's a user, we'll use the account name to test. Otherwise rely on
+  // the entity implementing the EntityOwnerInterface. Anything else can't be
+  // owned, and we'll refuse access.
+  if ($items) {
+    $entity = $items->getEntity();
+    if ((($entity instanceof EntityOwnerInterface) &&
+        $entity->getOwner()->getAccountName() == $account->getAccountName()) ||
+      (($entity instanceof UserInterface) &&
+        $entity->name->value == $account->getAccountName())
+    ) {
+      if ($operation == 'view' && $account->hasPermission('view own agree_terms')) {
+        return AccessResult::allowed();
+      }
+
+      // This is a special situation, as we do not want users to be able to edit the
+      // value of this field, but they need edit permission in the entity creation form...
+      // Therefore, we check if the entity has a value for this field:
+      // If there is no value (unchecked) -> allow access to this field
+      // If there is a value, check if user has `change own agree_terms`
+      if ($operation == 'edit') {
+        if ($items->isEmpty() || empty($items->first()->getValue()['value'])) {
+          return AccessResult::allowed();
+        }
+        elseif ($account->hasPermission('change own agree_terms')) {
+          return AccessResult::allowed();
+        }
+      }
+    }
+  }
+  // Anything else on this field is forbidden.
+  return AccessResult::forbidden();
+}

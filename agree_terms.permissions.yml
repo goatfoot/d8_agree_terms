@@ -1,0 +1,10 @@
+'view own agree_terms':
+  title: View own agree-terms
+'view any agree_terms':
+  title: View any agree-terms
+'edit own agree_terms':
+  title: Edit own agree-terms
+'administer the agree_terms field':
+  title: Administer (edit any) the agree-terms field.
+
+
